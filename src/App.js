@@ -52,6 +52,16 @@ function App() {
   const [loading, setLoading] = useState(false);
   const messagesEndRef = useRef(null);
   const abortControllerRef = useRef(null);
+  const sessionIdRef = useRef(null);
+
+  // Initialize sessionId once
+  if (!sessionIdRef.current) {
+    if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+      sessionIdRef.current = crypto.randomUUID();
+    } else {
+      sessionIdRef.current = 'session-' + Math.random().toString(36).substring(2, 11);
+    }
+  }
 
   const { messages, flags } = modeState[mode];
   const currentMode = MODES[mode];
@@ -90,7 +100,11 @@ function App() {
           'Content-Type': 'application/json',
           'Accept': 'text/event-stream',
         },
-        body: JSON.stringify({ message: userText, history: currentHistory }),
+        body: JSON.stringify({ 
+          message: userText, 
+          history: currentHistory,
+          sessionId: sessionIdRef.current 
+        }),
         signal: combinedSignal,
       });
 
@@ -254,7 +268,11 @@ function App() {
     abortControllerRef.current = null;
     setLoading(false);
     // Call the backend to clear stored database conversations for a fully clean slate
-    fetch('/clear', { method: 'POST' }).catch(e => console.error("Error clearing backend chat:", e));
+    fetch('/clear', { 
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sessionId: sessionIdRef.current })
+    }).catch(e => console.error("Error clearing backend chat:", e));
 
     setModeState(prev => ({
       ...prev,

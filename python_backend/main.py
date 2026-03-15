@@ -22,6 +22,28 @@ app = FastAPI(title="Healthcare AI Diagnoser (Python/Railtracks)")
 async def sleep(ms):
     await asyncio.sleep(ms / 1000.0)
 
+# Task tracking for cancellation
+# session_id -> asyncio.Task
+active_tasks = {}
+
+def register_task(session_id: str, task: asyncio.Task):
+    # Cancel existing task for this session if any (prevent double-agent)
+    if session_id in active_tasks:
+        try:
+            active_tasks[session_id].cancel()
+        except: pass
+    active_tasks[session_id] = task
+
+def unregister_task(session_id: str):
+    if session_id in active_tasks:
+        active_tasks.pop(session_id, None)
+
+@app.middleware("http")
+async def cleanup_tasks_middleware(request: Request, call_next):
+    # This middle ware can help but we'll mainly rely on explicit unregistering in the generators
+    response = await call_next(request)
+    return response
+
 # CORS configuration
 app.add_middleware(
     CORSMiddleware,
@@ -168,17 +190,47 @@ async def stream_health(user_message, history, session_id):
 
 @app.post("/triage")
 async def triage_endpoint(request: ChatRequest):
-    return StreamingResponse(stream_triage(request.message, request.history, request.sessionId), media_type="text/event-stream")
+    async def wrapped_generator():
+        session_id = request.sessionId or "anon-session"
+        register_task(session_id, asyncio.current_task())
+        try:
+            async for chunk in stream_triage(request.message, request.history, session_id):
+                yield chunk
+        finally:
+            unregister_task(session_id)
+            
+    return StreamingResponse(wrapped_generator(), media_type="text/event-stream")
 
 @app.post("/health-assistant")
 async def health_endpoint(request: ChatRequest):
-    return StreamingResponse(stream_health(request.message, request.history, request.sessionId), media_type="text/event-stream")
+    async def wrapped_generator():
+        session_id = request.sessionId or "anon-session"
+        register_task(session_id, asyncio.current_task())
+        try:
+            async for chunk in stream_health(request.message, request.history, session_id):
+                yield chunk
+        finally:
+            unregister_task(session_id)
+            
+    return StreamingResponse(wrapped_generator(), media_type="text/event-stream")
+
+class ClearRequest(BaseModel):
+    sessionId: Optional[str] = None
 
 @app.post("/clear")
-async def clear_endpoint():
+async def clear_endpoint(request: ClearRequest):
+    # 1. Cancel running agent task if any
+    if request.sessionId and request.sessionId in active_tasks:
+        task = active_tasks.get(request.sessionId)
+        if task and not task.done():
+            task.cancel()
+            print(f"Cancelled active task for session: {request.sessionId}")
+        unregister_task(request.sessionId)
+
+    # 2. Clear database/local storage
     from services.db_service import clear_conversations
     clear_conversations()
-    return {"status": "cleared"}
+    return {"status": "cleared", "cancelled": True}
 
 # Serve React App
 build_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "../build"))
