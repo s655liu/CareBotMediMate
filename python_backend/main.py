@@ -128,18 +128,29 @@ async def stream_triage(user_message, history, session_id):
 
 
 
-    # Extract options with lenient regex
-    options_match = re.search(r'\[OPTIONS:\s*(\[[\s\S]*?\])[\]\)]', full_reply)
+    # Extract options with very lenient regex
+    # Matches [OPTIONS: ["a", "b"]] or [OPTIONS: ['a', 'b']] or [OPTIONS: [ ... ]]
+    options_match = re.search(r'\[OPTIONS:?\s*(\[[\s\S]*?\])\s*\]?', full_reply, flags=re.IGNORECASE)
     if options_match:
         try:
-            options_str = options_match.group(1)
-            # Balance brackets if needed
+            options_str = options_match.group(1).strip()
+            # Balance brackets for safety
             if options_str.count('[') > options_str.count(']'):
                 options_str += ']' * (options_str.count('[') - options_str.count(']'))
             
-            options = json.loads(options_str)
-            yield f"data: {json.dumps({'type': 'options', 'options': options})}\n\n"
-        except: pass
+            try:
+                # Try standard JSON first
+                options = json.loads(options_str)
+            except:
+                # Fallback to ast.literal_eval for single quotes
+                import ast
+                options = ast.literal_eval(options_str)
+                
+            if isinstance(options, list):
+                yield f"data: {json.dumps({'type': 'options', 'options': options})}\n\n"
+        except Exception as e:
+            print(f"Options parsing error: {e}")
+            pass
 
     yield "data: {\"type\": \"done\"}\n\n"
     save_conversation(session_id, "triage", user_message, final_bot_msg, urgency)
