@@ -1,0 +1,10 @@
+fastapi
+uvicorn
+railtracks
+railtracks[cli]
+ibm-watsonx-ai
+ibm-db
+python-dotenv
+pydantic
+numpy
+requests
