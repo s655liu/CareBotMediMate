@@ -199,6 +199,19 @@ body {
   color: var(--text-primary);
 }
 
+.bubble.streaming::after {
+  content: '▋';
+  margin-left: 2px;
+  vertical-align: middle;
+  color: var(--accent-teal-light);
+  animation: blink 0.8s step-end infinite;
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
 .bubble.typing {
   color: var(--text-muted);
   font-style: italic;
@@ -456,4 +469,61 @@ body {
 }
 .option-chip:active {
   transform: translateY(0);
+}
+
+/* ─── Numeric Input ──────────────────────────────── */
+.numeric-input-container {
+  background: rgba(13, 148, 136, 0.05);
+  border: 1px dashed var(--accent-teal);
+  border-radius: 12px;
+  padding: 0.8rem;
+  margin-top: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.numeric-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.numeric-controls {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.numeric-controls input {
+  flex: 1;
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.4rem 0.8rem;
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  outline: none;
+}
+
+.numeric-controls input:focus {
+  border-color: var(--accent-teal);
+}
+
+.numeric-submit {
+  background: var(--accent-teal);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 0.4rem 1rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.numeric-submit:hover {
+  background: var(--accent-teal-light);
+  transform: translateY(-1px);
 }

@@ -7,7 +7,7 @@ from fastapi.responses import StreamingResponse, FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import List, Optional, Any
 
 from services.watsonx_service import generate_chat_stream
 from services.rag_service import search_medical_guidelines
@@ -26,11 +26,14 @@ async def sleep(ms):
 # session_id -> asyncio.Task
 active_tasks = {}
 
-def register_task(session_id: str, task: asyncio.Task):
+def register_task(session_id: str, task: Any):
+    if not task: return
     # Cancel existing task for this session if any (prevent double-agent)
     if session_id in active_tasks:
         try:
-            active_tasks[session_id].cancel()
+            old_task = active_tasks.get(session_id)
+            if old_task and not old_task.done():
+                old_task.cancel()
         except: pass
     active_tasks[session_id] = task
 
@@ -74,13 +77,19 @@ async def stream_triage(user_message, history, session_id):
         # Aggressively hide potential tags
         temp_text = full_reply
         
-        # 1. Hide anything from [OPTIONS: onwards
+        # 1. Hide tags
         options_idx = temp_text.lower().find("[options")
-        if options_idx != -1:
-            temp_text = temp_text[:options_idx]
+        num_input_idx = temp_text.lower().find("[number_input")
+        
+        hide_idx = -1
+        if options_idx != -1: hide_idx = options_idx
+        if num_input_idx != -1 and (hide_idx == -1 or num_input_idx < hide_idx): hide_idx = num_input_idx
+        
+        if hide_idx != -1:
+            temp_text = temp_text[:hide_idx]
         else:
             # 2. Hide partial [ at the end to prevent flickering
-            if temp_text.endswith("[") or temp_text.endswith("[O") or temp_text.endswith("[OP"):
+            if temp_text.endswith("[") or temp_text.endswith("[O") or temp_text.endswith("[N"):
                 temp_text = temp_text.rsplit("[", 1)[0]
         
         # 3. Hide anything from { "type": "assessment" onwards
@@ -97,10 +106,11 @@ async def stream_triage(user_message, history, session_id):
         if new_text:
             yield f"data: {json.dumps({'type': 'chunk', 'text': new_text})}\n\n"
             yielded_text += new_text
-
+            await asyncio.sleep(0.02) # Pacing for typewriter effect
+    
     # Final bot message is the fully cleaned text
-    # We use a solid regex to strip tags for the final 'correct' event
     clean_bot_msg = re.sub(r'\[OPTIONS:[\s\S]*$', '', full_reply, flags=re.IGNORECASE)
+    clean_bot_msg = re.sub(r'\[NUMBER_INPUT:[\s\S]*$', '', clean_bot_msg, flags=re.IGNORECASE)
     clean_bot_msg = re.sub(r'\{[\s\S]*"type"\s*:\s*"assessment"[\s\S]*$', '', clean_bot_msg)
     clean_bot_msg = clean_bot_msg.strip()
     
@@ -114,9 +124,7 @@ async def stream_triage(user_message, history, session_id):
     json_match = re.search(r'(\{[\s\S]*"type"\s*:\s*"assessment"[\s\S]*\})', full_reply)
     if json_match:
         try:
-            # Try to fix potential missing closing braces if needed, but start with raw
             assessment_str = json_match.group(1)
-            # Basic balancing for sanity
             if assessment_str.count('{') > assessment_str.count('}'):
                 assessment_str += '}' * (assessment_str.count('{') - assessment_str.count('}'))
             
@@ -126,31 +134,30 @@ async def stream_triage(user_message, history, session_id):
             yield f"data: {json.dumps({'type': 'assessment', **assessment})}\n\n"
         except: pass
 
-
-
-    # Extract options with very lenient regex
-    # Matches [OPTIONS: ["a", "b"]] or [OPTIONS: ['a', 'b']] or [OPTIONS: [ ... ]]
+    # Extract options
     options_match = re.search(r'\[OPTIONS:?\s*(\[[\s\S]*?\])\s*\]?', full_reply, flags=re.IGNORECASE)
     if options_match:
         try:
             options_str = options_match.group(1).strip()
-            # Balance brackets for safety
             if options_str.count('[') > options_str.count(']'):
                 options_str += ']' * (options_str.count('[') - options_str.count(']'))
             
             try:
-                # Try standard JSON first
                 options = json.loads(options_str)
             except:
-                # Fallback to ast.literal_eval for single quotes
                 import ast
                 options = ast.literal_eval(options_str)
-                
             if isinstance(options, list):
                 yield f"data: {json.dumps({'type': 'options', 'options': options})}\n\n"
-        except Exception as e:
-            print(f"Options parsing error: {e}")
-            pass
+        except: pass
+
+    # Extract Number Input
+    num_match = re.search(r'\[NUMBER_INPUT:?\s*(\{[\s\S]*?\})\s*\]?', full_reply, flags=re.IGNORECASE)
+    if num_match:
+        try:
+            num_data = json.loads(num_match.group(1))
+            yield f"data: {json.dumps({'type': 'number_input', 'data': num_data})}\n\n"
+        except: pass
 
     yield "data: {\"type\": \"done\"}\n\n"
     save_conversation(session_id, "triage", user_message, final_bot_msg, urgency)
@@ -159,30 +166,36 @@ async def stream_health(user_message, history, session_id):
     from services.agent_service import health_flow, stream_flow_to_sse
     
     full_reply = ""
-    is_thinking = True
-    
     yielded_text = ""
     
     async for chunk in stream_flow_to_sse(health_flow, user_message, history):
         full_reply += chunk
         
-        # Hide anything from [FLAG: onwards
+        # Hide tags
         temp_text = full_reply
         flag_idx = temp_text.find("[FLAG")
-        if flag_idx == -1:
-            flag_idx = temp_text.find("[F") # Prevent flickering
-        if flag_idx != -1:
-            temp_text = temp_text[:flag_idx]
+        num_idx = temp_text.find("[NUMBER_INPUT")
+        
+        hide_idx = -1
+        if flag_idx != -1: hide_idx = flag_idx
+        if num_idx != -1 and (hide_idx == -1 or num_idx < hide_idx): hide_idx = num_idx
+        
+        if hide_idx != -1:
+            temp_text = temp_text[:hide_idx]
+        else:
+            if temp_text.endswith("[") or temp_text.endswith("[F") or temp_text.endswith("[N"):
+                temp_text = temp_text.rsplit("[", 1)[0]
             
         new_text = temp_text[len(yielded_text):]
         if new_text:
             yield f"data: {json.dumps({'type': 'chunk', 'text': new_text})}\n\n"
             yielded_text += new_text
+            await asyncio.sleep(0.02) # Pacing for typewriter effect
 
     final_bot_msg = ""
     severity = None
     
-    final_bot_msg = full_reply.split("[FLAG:")[0].strip()
+    final_bot_msg = full_reply.split("[FLAG:")[0].split("[NUMBER_INPUT:")[0].strip()
     
     # Send a correction event to finalize the text exactly
     yield f"data: {json.dumps({'type': 'correct', 'text': final_bot_msg})}\n\n"
@@ -194,6 +207,14 @@ async def stream_health(user_message, history, session_id):
             final_bot_msg = f"{final_bot_msg}\n(Severity: {flag.get('severity', 'unknown')})"
             severity = flag.get('severity')
             yield f"data: {json.dumps({'type': 'flag', **flag})}\n\n"
+        except: pass
+
+    # Extract Number Input
+    num_match_health = re.search(r'\[NUMBER_INPUT:?\s*(\{[\s\S]*?\})\s*\]?', full_reply, flags=re.IGNORECASE)
+    if num_match_health:
+        try:
+            num_data = json.loads(num_match_health.group(1))
+            yield f"data: {json.dumps({'type': 'number_input', 'data': num_data})}\n\n"
         except: pass
 
     yield "data: {\"type\": \"done\"}\n\n"
@@ -230,18 +251,16 @@ class ClearRequest(BaseModel):
 
 @app.post("/clear")
 async def clear_endpoint(request: ClearRequest):
-    # 1. Cancel running agent task if any
     if request.sessionId and request.sessionId in active_tasks:
-        task = active_tasks.get(request.sessionId)
-        if task and not task.done():
-            task.cancel()
-            print(f"Cancelled active task for session: {request.sessionId}")
+        try:
+            task = active_tasks.get(request.sessionId)
+            if task and not task.done():
+                task.cancel()
+        except: pass
         unregister_task(request.sessionId)
-
-    # 2. Clear database/local storage
     from services.db_service import clear_conversations
     clear_conversations()
-    return {"status": "cleared", "cancelled": True}
+    return {"status": "cleared"}
 
 # Serve React App
 build_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "../build"))
@@ -258,7 +277,7 @@ if os.path.exists(build_path):
 else:
     @app.get("/")
     def read_root():
-        return {"message": "Python backend is running. (Build folder not found)"}
+        return {"message": "Python backend is running."}
 
 if __name__ == "__main__":
     import uvicorn

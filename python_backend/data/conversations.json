@@ -1,29 +1,11 @@
 [
   {
-    "id": "7dc03aa4-9865-4de3-a8dc-1f772b53b1e4",
-    "session_id": "171ff5d6-d28a-4ccf-9856-7633b5125fb4",
+    "id": "fc247e6b-40e3-49dc-a69c-d757be518306",
+    "session_id": "78fbfaa0-6fae-40e1-a261-33d0626862fa",
     "mode": "triage",
-    "user_message": "\"I'm having trouble breathing and my chest feels tight.\"",
-    "bot_response": "Are you experiencing any confusion, difficulty speaking, or severe pain along with the breathing trouble and chest tightness?",
+    "user_message": "I have a fever",
+    "bot_response": "Are you experiencing any confusion, sensitivity to light, or numbness along with your fever?",
     "urgency": null,
-    "created_at": "2026-03-15T03:00:59.027406"
-  },
-  {
-    "id": "844bb37e-7c6b-4263-a859-255342e4164a",
-    "session_id": "99149e34-3255-46b8-9805-72aa0083a503",
-    "mode": "triage",
-    "user_message": "I have a mild headache",
-    "bot_response": "Are you experiencing any confusion, sensitivity to light, or numbness along with your headache?",
-    "urgency": null,
-    "created_at": "2026-03-15T03:16:13.322512"
-  },
-  {
-    "id": "0c278948-ef5a-4872-bc95-f9c7a1d074a1",
-    "session_id": "b490ff1a-1256-468c-a441-de241fb302d1",
-    "mode": "triage",
-    "user_message": "I have a mild headache",
-    "bot_response": "Are you experiencing any confusion, sensitivity to light, or numbness along with your headache?",
-    "urgency": null,
-    "created_at": "2026-03-15T03:17:00.381924"
+    "created_at": "2026-03-15T04:12:56.686277"
   }
 ]

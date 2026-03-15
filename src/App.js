@@ -118,6 +118,7 @@ function App() {
       let serverFlag = null;
       let serverError = null;
       let serverOptions = null;
+      let serverNumberInput = null;
 
       while (!doneReading) {
         const { value, done } = await reader.read();
@@ -161,6 +162,8 @@ function App() {
                 });
               } else if (parsed.type === 'options') {
                 serverOptions = parsed.options;
+              } else if (parsed.type === 'number_input') {
+                serverNumberInput = parsed.data;
               } else if (parsed.type === 'error') {
                 console.error("Server streamed an error:", parsed.text);
                 serverError = parsed.text;
@@ -197,7 +200,12 @@ function App() {
               ...prev,
               [mode]: {
                 ...prev[mode],
-                messages: [...newMessages, { role: 'bot', text: serverError ? `⚠️ Error: ${serverError}` : (accumulatedText || 'Could you describe your symptoms more?'), options: serverOptions }],
+                messages: [...newMessages, { 
+                  role: 'bot', 
+                  text: serverError ? `⚠️ Error: ${serverError}` : (accumulatedText || 'Could you describe your symptoms more?'), 
+                  options: serverOptions,
+                  numberInput: serverNumberInput
+                }],
                 history: [
                   ...prev[mode].history,
                   { role: 'user', content: userText },
@@ -212,7 +220,14 @@ function App() {
             ...prev,
             [mode]: {
               ...prev[mode],
-              messages: [...newMessages, { role: 'bot', text: serverError ? `⚠️ Error: ${serverError}` : (accumulatedText || 'I had trouble responding. Please try again.') }],
+              messages: [
+                ...newMessages, 
+                { 
+                  role: 'bot', 
+                  text: serverError ? `⚠️ Error: ${serverError}` : (accumulatedText || 'I had trouble responding. Please try again.'),
+                  numberInput: serverNumberInput
+                }
+              ],
               history: [
                 ...prev[mode].history,
                 { role: 'user', content: userText },
@@ -363,7 +378,7 @@ function App() {
               <div key={i} className="bubble-row bot">
                 <div className="avatar bot">{currentMode.icon}</div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxWidth: '75%' }}>
-                  <div className={`bubble bot${msg.isStreaming && !msg.text ? ' typing' : ''}`}>
+                  <div className={`bubble bot${msg.isStreaming && !msg.text ? ' typing' : ''}${msg.isStreaming ? ' streaming' : ''}`}>
                     {msg.isStreaming && !msg.text ? 'Thinking…' : msg.text}
                   </div>
                   {msg.options && isLastMessage && !loading && (
@@ -380,6 +395,41 @@ function App() {
                           {opt}
                         </button>
                       ))}
+                    </div>
+                  )}
+                  {msg.numberInput && isLastMessage && !loading && (
+                    <div className="numeric-input-container">
+                      <div className="numeric-label">
+                        {msg.numberInput.label || 'Enter value'} 
+                        {msg.numberInput.unit ? ` (${msg.numberInput.unit})` : ''}
+                      </div>
+                      <div className="numeric-controls">
+                        <input 
+                          type="number" 
+                          min={msg.numberInput.min} 
+                          max={msg.numberInput.max} 
+                          defaultValue={msg.numberInput.min || 0}
+                          id="number-input-field"
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              document.getElementById('numeric-submit-btn')?.click();
+                            }
+                          }}
+                        />
+                        <button 
+                          id="numeric-submit-btn"
+                          className="numeric-submit"
+                          onClick={() => {
+                            const val = document.getElementById('number-input-field').value;
+                            const unit = msg.numberInput.unit || '';
+                            const responseText = `${val}${unit ? ' ' + unit : ''}`;
+                            setInput(responseText);
+                            setTimeout(() => document.getElementById('send-button')?.click(), 0);
+                          }}
+                        >
+                          Confirm
+                        </button>
+                      </div>
                     </div>
                   )}
                 </div>
