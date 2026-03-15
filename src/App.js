@@ -5,7 +5,7 @@ import './App.css';
 const MODES = {
   triage: {
     id: 'triage',
-    label: '🩺 Symptom Triage',
+    label: '🩺 CareBot Triage',
     icon: '🩺',
     name: 'CareBot — AI Triage',
     description: 'Describe your symptoms. I\'ll help determine how urgently you should seek care.',
@@ -14,7 +14,7 @@ const MODES = {
   },
   health: {
     id: 'health',
-    label: '💊 Health Assistant',
+    label: '💊 MedMate Assistant',
     icon: '💊',
     name: 'MedMate — Health Assistant',
     description: 'Your medication coach. Share how you\'re feeling or ask about your treatment.',

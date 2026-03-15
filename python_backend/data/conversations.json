@@ -7,5 +7,95 @@
     "bot_response": "Are you experiencing any confusion, sensitivity to light, or numbness along with your fever?",
     "urgency": null,
     "created_at": "2026-03-15T04:12:56.686277"
+  },
+  {
+    "id": "9086ccc9-f347-41e2-aea5-faa4b9c5c9cc",
+    "session_id": "8d10e7c9-6caf-4f9e-87ed-977b2c8b0165",
+    "mode": "triage",
+    "user_message": "I have sudden, crushing chest pain that spreads to my left arm",
+    "bot_response": "{\"type\": \"assessment\", \"urgency\": \"red\", \"summary\": \"Sudden crushing chest pain radiating to the left arm\", \"action\": \"Seek immediate emergency care at the nearest ER\", \"reasoning\": \"Symptoms indicate a potential life-threatening cardiac event\"}",
+    "urgency": "red",
+    "created_at": "2026-03-15T04:15:25.538643"
+  },
+  {
+    "id": "da8eb48b-5245-4801-a54c-4a6ae3345a68",
+    "session_id": "8d10e7c9-6caf-4f9e-87ed-977b2c8b0165",
+    "mode": "triage",
+    "user_message": "My friend is confused and their speech is very slurred.",
+    "bot_response": "{\"type\": \"assessment\", \"urgency\": \"red\", \"summary\": \"Confusion and slurred speech\", \"action\": \"Go to the emergency room immediately\", \"reasoning\": \"Symptoms indicate a potential life-threatening condition\"}",
+    "urgency": "red",
+    "created_at": "2026-03-15T04:15:47.198323"
+  },
+  {
+    "id": "ca6c0f92-981a-47aa-9cfd-93b58df0a035",
+    "session_id": "8d10e7c9-6caf-4f9e-87ed-977b2c8b0165",
+    "mode": "triage",
+    "user_message": "My ankle is very swollen after I tripped, and I can't put much weight on it",
+    "bot_response": "How would you describe the level of pain you're experiencing in your ankle?",
+    "urgency": null,
+    "created_at": "2026-03-15T04:16:14.705950"
+  },
+  {
+    "id": "d06286a3-ceae-4caa-a65e-d7f7b869a06f",
+    "session_id": "8d10e7c9-6caf-4f9e-87ed-977b2c8b0165",
+    "mode": "triage",
+    "user_message": "Severe",
+    "bot_response": "How long have you been experiencing the swelling and pain in your ankle?",
+    "urgency": null,
+    "created_at": "2026-03-15T04:16:24.280411"
+  },
+  {
+    "id": "2aa661fe-32e2-4709-bc11-1ce0b16b36e6",
+    "session_id": "8d10e7c9-6caf-4f9e-87ed-977b2c8b0165",
+    "mode": "triage",
+    "user_message": "1-3 days",
+    "bot_response": "What is your current level of mobility, can you walk or do you need assistance?",
+    "urgency": null,
+    "created_at": "2026-03-15T04:17:11.906072"
+  },
+  {
+    "id": "25889614-8a0a-4c6c-8612-59c9d2df6132",
+    "session_id": "8d10e7c9-6caf-4f9e-87ed-977b2c8b0165",
+    "mode": "triage",
+    "user_message": "I can walk with crutches",
+    "bot_response": "{\"type\": \"assessment\", \"urgency\": \"yellow\", \"summary\": \"Severe ankle pain and swelling after a trip, unable to put weight on it\", \"action\": \"See a doctor within 24-48 hours for further evaluation and potential treatment\", \"reasoning\": \"The patient's symptoms suggest a possible ankle sprain or fracture, which requires medical attention to determine the severity and appropriate treatment.\"}",
+    "urgency": "yellow",
+    "created_at": "2026-03-15T04:17:29.281748"
+  },
+  {
+    "id": "f71045c4-903f-42ee-9d30-32d2b41ee15c",
+    "session_id": "8d10e7c9-6caf-4f9e-87ed-977b2c8b0165",
+    "mode": "triage",
+    "user_message": "I have mild seasonal allergies and a runny nose.",
+    "bot_response": "How would you rate the severity of your runny nose, is it affecting your daily activities?",
+    "urgency": null,
+    "created_at": "2026-03-15T04:18:03.640437"
+  },
+  {
+    "id": "0a8094df-5d6d-4624-89a0-1e77f9723668",
+    "session_id": "8d10e7c9-6caf-4f9e-87ed-977b2c8b0165",
+    "mode": "triage",
+    "user_message": "Mildly",
+    "bot_response": "How long have you been experiencing the runny nose?",
+    "urgency": null,
+    "created_at": "2026-03-15T04:18:13.097866"
+  },
+  {
+    "id": "f61126f4-ff26-4aeb-aa31-99e8368bab92",
+    "session_id": "8d10e7c9-6caf-4f9e-87ed-977b2c8b0165",
+    "mode": "triage",
+    "user_message": "Less than a week",
+    "bot_response": "What is your current temperature?",
+    "urgency": null,
+    "created_at": "2026-03-15T04:18:23.201856"
+  },
+  {
+    "id": "b0d3c5b7-cd50-4bdd-ac0d-23da5557adc3",
+    "session_id": "8d10e7c9-6caf-4f9e-87ed-977b2c8b0165",
+    "mode": "triage",
+    "user_message": "95 \u00b0F",
+    "bot_response": "{\"type\": \"assessment\", \"urgency\": \"green\", \"summary\": \"Mild seasonal allergies with a runny nose, mildly affecting daily activities, for less than a week, with a normal temperature\", \"action\": \"Home care and over-the-counter allergy medication as needed\", \"reasoning\": \"The symptoms are mild, not severe, and the temperature is normal, indicating that the condition can be managed with home care and does not require immediate medical attention.\"}",
+    "urgency": "green",
+    "created_at": "2026-03-15T04:18:34.915622"
   }
 ]
